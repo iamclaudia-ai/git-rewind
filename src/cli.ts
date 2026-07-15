@@ -8,6 +8,7 @@
  */
 import { parseArgs } from "./args.ts";
 import { DEFAULTS } from "./config.ts";
+import { installCommand, uninstallCommand } from "./commands/install.ts";
 import { listCommand, showCommand } from "./commands/list.ts";
 import { restoreCommand, undoCommand } from "./commands/restore.ts";
 import { snapshotCommand } from "./commands/snapshot.ts";
@@ -36,6 +37,8 @@ const IMPLEMENTED = new Set<Command>([
   "status",
   "restore",
   "undo",
+  "install",
+  "uninstall",
 ]);
 
 function usage(): string {
@@ -85,7 +88,16 @@ function main(argv: string[]): void {
   const cmd = first as Command;
   // `snapshot` treats --async/--if-dirty as booleans that default from config
   // (and support --no-*). Other commands take the usual value flags.
-  const booleans = ["json", "quiet", "verbose", "async", "if-dirty", "gc"];
+  const booleans = [
+    "json",
+    "quiet",
+    "verbose",
+    "async",
+    "if-dirty",
+    "gc",
+    "stdin-session",
+    "dry-run",
+  ];
   const { positionals, flags, rest } = parseArgs(args.slice(1), booleans);
 
   try {
@@ -109,6 +121,12 @@ function main(argv: string[]): void {
         break;
       case "undo":
         process.exit(undoCommand(flags));
+        break;
+      case "install":
+        process.exit(installCommand(positionals, flags));
+        break;
+      case "uninstall":
+        process.exit(uninstallCommand(positionals, flags));
         break;
       default:
         if (!IMPLEMENTED.has(cmd)) notImplemented(cmd);

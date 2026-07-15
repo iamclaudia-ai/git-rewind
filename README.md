@@ -76,14 +76,22 @@ cheap even on large repos.
 
 ## Status
 
-🌿 **Capture, inspect, and recover are live.** `snapshot` (sync + `--async`,
-`--if-dirty`, tree-SHA dedup, fixed identity, CAS ref update), `list`, `show`,
+🌿 **Usable end-to-end.** `snapshot` (sync + `--async`, `--if-dirty`, tree-SHA
+dedup, fixed identity, CAS ref update, session-from-stdin), `list`, `show`,
 `status`, `restore` (full + path-scoped, undo-point-first, delete-then-restore),
-and `undo` (toggles redo) are implemented and covered by a 19-case suite proving
-the invariants — the real index/HEAD/branch and ignored files are provably
-untouched, and full restore reproduces the target worktree tree exactly.
-`diff` · `prune` · `install` are next. The spec in [DESIGN.md](./DESIGN.md)
-remains the source of truth.
+`undo` (toggles redo), and `install`/`uninstall` (idempotent Claude `Stop`-hook
+wiring) are implemented and covered by a 27-case suite proving the invariants —
+the real index/HEAD/branch and ignored files are provably untouched, and full
+restore reproduces the target worktree tree exactly. `diff` and `prune` are the
+remaining pieces. The spec in [DESIGN.md](./DESIGN.md) remains the source of truth.
+
+## Turn it on (Claude Code)
+
+```bash
+git-rewind install claude        # idempotently adds the Stop hook
+# every dirty turn is now snapshotted, hands-free
+git-rewind uninstall claude      # remove it
+```
 
 ## License
 

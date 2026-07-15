@@ -1,6 +1,6 @@
 {
   "name": "git-rewind",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Agent-agnostic, git-native per-turn worktree snapshots. Capture every turn's file state into a hidden ref (no branches, no HEAD churn), restore any point. Wire into any AI coding agent's turn-end hook.",
   "type": "module",
   "license": "MIT",

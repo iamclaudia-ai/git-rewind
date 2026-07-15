@@ -7,7 +7,7 @@
  * mutated.
  */
 import { spawn, type SpawnOptions } from "node:child_process";
-import { openSync } from "node:fs";
+import { openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { bool, str } from "../args.ts";
 import { commitTree, localIso, writeWorktreeTree } from "../capture.ts";
@@ -149,6 +149,24 @@ export function runSnapshot(opts: SnapshotOptions): SnapshotResult {
  */
 export const DEFAULT_AGENT = "shell";
 
+/**
+ * Best-effort session id from a hook's stdin JSON payload (Claude Code passes
+ * `session_id`, etc.). Gated on a non-TTY stdin so a manual `snapshot` in a
+ * terminal never blocks waiting for input. Any failure → undefined.
+ */
+function readStdinSession(): string | undefined {
+  try {
+    if (process.stdin.isTTY) return undefined;
+    const raw = readFileSync(0, "utf8");
+    if (!raw.trim()) return undefined;
+    const obj = JSON.parse(raw) as Record<string, unknown>;
+    const s = obj.session_id ?? obj.sessionId ?? obj.session;
+    return typeof s === "string" ? s : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** CLI adapter: parse flags, run, emit output, return exit code. */
 export function snapshotCommand(
   flags: Record<string, string | boolean>,
@@ -156,10 +174,13 @@ export function snapshotCommand(
 ): number {
   const repoDir = str(flags, "repo") ?? process.cwd();
   const boundary = (str(flags, "boundary") as Boundary) ?? "turn-end";
+  const session =
+    str(flags, "session") ??
+    (bool(flags, "stdin-session", false) ? readStdinSession() : undefined);
   const opts: SnapshotOptions = {
     repoDir,
     agent: str(flags, "agent") ?? DEFAULT_AGENT,
-    session: str(flags, "session"),
+    session,
     label: str(flags, "label"),
     boundary,
     ifDirty: bool(flags, "if-dirty", cfgDefaults.ifDirty),
