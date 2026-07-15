@@ -76,9 +76,11 @@ cheap even on large repos.
 
 ## Status
 
-🚧 **Design complete, implementation in progress.** The spec in
-[DESIGN.md](./DESIGN.md) is the source of truth; the CLI surface in `src/cli.ts`
-is scaffolded and being filled in.
+🌱 **Capture & inspect are live.** `snapshot` (sync + `--async`, `--if-dirty`,
+tree-SHA dedup, fixed identity, CAS ref update), `list`, `show`, and `status` are
+implemented and covered by an invariant test suite (real index/HEAD/branch/status
+provably untouched). `restore` · `undo` · `diff` · `prune` · `install` are next.
+The spec in [DESIGN.md](./DESIGN.md) remains the source of truth.
 
 ## License
 

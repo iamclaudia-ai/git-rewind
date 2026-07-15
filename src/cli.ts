@@ -2,14 +2,15 @@
 /**
  * git-rewind — agent-agnostic, git-native per-turn worktree snapshots.
  *
- * SCAFFOLD ONLY. This file defines the command surface and dispatch; the actual
- * git plumbing lives in the modules referenced by TODOs and is implemented in
- * the build session. See ../DESIGN.md for the full spec.
- *
  * Core invariant every command must uphold (DESIGN.md §2):
  *   A snapshot NEVER mutates the user's real git state — not the index, not HEAD,
  *   not any branch, not the stash, not the worktree. Only objects + refs/rewind/*.
  */
+import { parseArgs } from "./args.ts";
+import { DEFAULTS } from "./config.ts";
+import { listCommand, showCommand } from "./commands/list.ts";
+import { snapshotCommand } from "./commands/snapshot.ts";
+import { statusCommand } from "./commands/status.ts";
 
 const COMMANDS = {
   snapshot: "Capture the current worktree into refs/rewind/store (the hook's call)",
@@ -25,6 +26,9 @@ const COMMANDS = {
 } as const;
 
 type Command = keyof typeof COMMANDS;
+
+/** Commands wired to real handlers; the rest are scaffolded stubs (exit 0). */
+const IMPLEMENTED = new Set<Command>(["snapshot", "list", "show", "status"]);
 
 function usage(): string {
   const rows = Object.entries(COMMANDS)
@@ -50,24 +54,10 @@ function usage(): string {
 }
 
 function notImplemented(cmd: Command): never {
-  // Exit 0 so a hook NEVER fails the agent's turn (DESIGN.md §9). Real
-  // implementations return non-zero only on genuine error.
+  // Exit 0 so a hook NEVER fails the agent's turn (DESIGN.md §9).
   console.error(`git-rewind: '${cmd}' is scaffolded but not yet implemented — see DESIGN.md`);
   process.exit(0);
 }
-
-// TODO(build): replace notImplemented stubs with the real handlers.
-//   snapshot  -> src/commands/snapshot.ts   (throwaway GIT_INDEX_FILE, add -A, write-tree,
-//                                             tree-SHA dedup, commit-tree, CAS update-ref; --async, --if-dirty)
-//   list/show -> src/commands/list.ts        (walk refs/rewind/store, parse Rewind-* trailers)
-//   diff      -> src/commands/diff.ts
-//   restore   -> src/commands/restore.ts     (undo point first; delete-then-restore via temp index; never stage)
-//   undo      -> src/commands/undo.ts
-//   prune     -> src/commands/prune.ts       (re-root chain to keep-last/max-age; pin labeled)
-//   status    -> src/commands/status.ts
-//   install   -> src/commands/install.ts     (idempotent hook-config patch per agent)
-//   Shared:   src/git.ts (plumbing wrappers), src/config.ts (~/.config/git-rewind/config.toml),
-//             src/repo.ts (resolve toplevel + allow/deny scoping), src/meta.ts (commit trailers).
 
 function main(argv: string[]): void {
   const args = argv.slice(2);
@@ -84,7 +74,41 @@ function main(argv: string[]): void {
     process.exit(1);
   }
 
-  notImplemented(first as Command);
+  const cmd = first as Command;
+  // `snapshot` treats --async/--if-dirty as booleans that default from config
+  // (and support --no-*). Other commands take the usual value flags.
+  const booleans = ["json", "quiet", "verbose", "async", "if-dirty", "gc"];
+  const { positionals, flags } = parseArgs(args.slice(1), booleans);
+
+  try {
+    switch (cmd) {
+      case "snapshot":
+        process.exit(
+          snapshotCommand(flags, { async: DEFAULTS.async, ifDirty: DEFAULTS.ifDirty }),
+        );
+        break;
+      case "list":
+        process.exit(listCommand(flags));
+        break;
+      case "show":
+        process.exit(showCommand(positionals, flags));
+        break;
+      case "status":
+        process.exit(statusCommand(flags));
+        break;
+      default:
+        if (!IMPLEMENTED.has(cmd)) notImplemented(cmd);
+    }
+  } catch (err) {
+    // snapshot must never fail a turn; other commands may surface real errors.
+    const msg = err instanceof Error ? err.message : String(err);
+    if (cmd === "snapshot") {
+      console.error(`git-rewind: snapshot error (non-fatal): ${msg}`);
+      process.exit(0);
+    }
+    console.error(`git-rewind: ${msg}`);
+    process.exit(1);
+  }
 }
 
 main(process.argv);
