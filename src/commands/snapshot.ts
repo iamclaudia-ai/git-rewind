@@ -7,10 +7,10 @@
  * mutated.
  */
 import { spawn, type SpawnOptions } from "node:child_process";
-import { mkdtempSync, openSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { openSync } from "node:fs";
 import { join } from "node:path";
 import { bool, str } from "../args.ts";
+import { commitTree, localIso, writeWorktreeTree } from "../capture.ts";
 import type { Config } from "../config.ts";
 import { loadConfig } from "../config.ts";
 import { git, gitTry } from "../git.ts";
@@ -18,13 +18,6 @@ import { withLock } from "../lock.ts";
 import type { Boundary } from "../meta.ts";
 import { buildMessage, REWIND_VERSION } from "../meta.ts";
 import { isRepoAllowed, resolveRepo } from "../repo.ts";
-
-const IDENTITY_ENV = {
-  GIT_AUTHOR_NAME: "git-rewind",
-  GIT_AUTHOR_EMAIL: "noreply@git-rewind",
-  GIT_COMMITTER_NAME: "git-rewind",
-  GIT_COMMITTER_EMAIL: "noreply@git-rewind",
-};
 
 export interface SnapshotOptions {
   repoDir: string;
@@ -37,35 +30,6 @@ export interface SnapshotOptions {
   json: boolean;
   quiet: boolean;
   verbose: boolean;
-}
-
-/** ISO-8601 timestamp with the local UTC offset (e.g. 2026-07-15T11:12:39-04:00). */
-function localIso(d = new Date()): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  const off = -d.getTimezoneOffset();
-  const sign = off >= 0 ? "+" : "-";
-  const a = Math.abs(off);
-  return (
-    `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` +
-    `T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}` +
-    `${sign}${p(Math.floor(a / 60))}:${p(a % 60)}`
-  );
-}
-
-/** Build the worktree tree via a throwaway index. Never touches the real index. */
-function writeWorktreeTree(root: string): string {
-  const dir = mkdtempSync(join(tmpdir(), "git-rewind-"));
-  const indexFile = join(dir, "index"); // does not exist yet → git creates it empty
-  try {
-    const env = { GIT_INDEX_FILE: indexFile };
-    // Empty index + add -A ⇒ tree is EXACTLY the worktree (tracked + untracked),
-    // with .gitignore / excludes honored and deletions reflected (absent files
-    // simply aren't added).
-    git(["add", "-A"], { cwd: root, env });
-    return git(["write-tree"], { cwd: root, env });
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
 }
 
 /**
@@ -159,13 +123,7 @@ export function runSnapshot(opts: SnapshotOptions): SnapshotResult {
         label: opts.label,
       });
 
-      const commitArgs = ["commit-tree", tree];
-      if (parent) commitArgs.push("-p", parent);
-      const commit = git(commitArgs, {
-        cwd: repo.root,
-        env: IDENTITY_ENV,
-        input: message,
-      });
+      const commit = commitTree(repo.root, tree, { parent, message });
 
       // CAS: oldvalue = parent, or "" to assert the ref must not yet exist.
       const casOk = gitTry(

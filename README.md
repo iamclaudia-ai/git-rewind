@@ -76,11 +76,14 @@ cheap even on large repos.
 
 ## Status
 
-🌱 **Capture & inspect are live.** `snapshot` (sync + `--async`, `--if-dirty`,
-tree-SHA dedup, fixed identity, CAS ref update), `list`, `show`, and `status` are
-implemented and covered by an invariant test suite (real index/HEAD/branch/status
-provably untouched). `restore` · `undo` · `diff` · `prune` · `install` are next.
-The spec in [DESIGN.md](./DESIGN.md) remains the source of truth.
+🌿 **Capture, inspect, and recover are live.** `snapshot` (sync + `--async`,
+`--if-dirty`, tree-SHA dedup, fixed identity, CAS ref update), `list`, `show`,
+`status`, `restore` (full + path-scoped, undo-point-first, delete-then-restore),
+and `undo` (toggles redo) are implemented and covered by a 19-case suite proving
+the invariants — the real index/HEAD/branch and ignored files are provably
+untouched, and full restore reproduces the target worktree tree exactly.
+`diff` · `prune` · `install` are next. The spec in [DESIGN.md](./DESIGN.md)
+remains the source of truth.
 
 ## License
 

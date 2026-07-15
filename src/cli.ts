@@ -9,6 +9,7 @@
 import { parseArgs } from "./args.ts";
 import { DEFAULTS } from "./config.ts";
 import { listCommand, showCommand } from "./commands/list.ts";
+import { restoreCommand, undoCommand } from "./commands/restore.ts";
 import { snapshotCommand } from "./commands/snapshot.ts";
 import { statusCommand } from "./commands/status.ts";
 
@@ -28,7 +29,14 @@ const COMMANDS = {
 type Command = keyof typeof COMMANDS;
 
 /** Commands wired to real handlers; the rest are scaffolded stubs (exit 0). */
-const IMPLEMENTED = new Set<Command>(["snapshot", "list", "show", "status"]);
+const IMPLEMENTED = new Set<Command>([
+  "snapshot",
+  "list",
+  "show",
+  "status",
+  "restore",
+  "undo",
+]);
 
 function usage(): string {
   const rows = Object.entries(COMMANDS)
@@ -78,7 +86,7 @@ function main(argv: string[]): void {
   // `snapshot` treats --async/--if-dirty as booleans that default from config
   // (and support --no-*). Other commands take the usual value flags.
   const booleans = ["json", "quiet", "verbose", "async", "if-dirty", "gc"];
-  const { positionals, flags } = parseArgs(args.slice(1), booleans);
+  const { positionals, flags, rest } = parseArgs(args.slice(1), booleans);
 
   try {
     switch (cmd) {
@@ -95,6 +103,12 @@ function main(argv: string[]): void {
         break;
       case "status":
         process.exit(statusCommand(flags));
+        break;
+      case "restore":
+        process.exit(restoreCommand(positionals, flags, rest));
+        break;
+      case "undo":
+        process.exit(undoCommand(flags));
         break;
       default:
         if (!IMPLEMENTED.has(cmd)) notImplemented(cmd);
