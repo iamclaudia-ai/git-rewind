@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
  * git-rewind — agent-agnostic, git-native per-turn worktree snapshots.
  *
