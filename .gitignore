@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+bun.lockb
+
+# This is a bun project — pnpm's lockfile is not ours (an auto-install hook may
+# regenerate it on package.json changes; keep it out of the tree).
+pnpm-lock.yaml

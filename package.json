@@ -1,0 +1,42 @@
+{
+  "name": "git-rewind",
+  "version": "0.0.0",
+  "description": "Agent-agnostic, git-native per-turn worktree snapshots. Capture every turn's file state into a hidden ref (no branches, no HEAD churn), restore any point. Wire into any AI coding agent's turn-end hook.",
+  "type": "module",
+  "license": "MIT",
+  "author": "iamclaudia-ai <claudia@iamclaudia.ai> (https://iamclaudia.ai)",
+  "bin": {
+    "git-rewind": "./src/cli.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "DESIGN.md"
+  ],
+  "keywords": [
+    "git",
+    "snapshot",
+    "rewind",
+    "checkpoint",
+    "undo",
+    "ai-agent",
+    "claude-code",
+    "codex",
+    "hook",
+    "cli"
+  ],
+  "scripts": {
+    "dev": "bun run ./src/cli.ts",
+    "build": "bun build ./src/cli.ts --compile --outfile dist/git-rewind",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check ."
+  },
+  "engines": {
+    "bun": ">=1.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.8.0"
+  }
+}
