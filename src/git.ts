@@ -19,11 +19,21 @@ export interface GitOptions {
 /** 256 MiB — generous headroom for `ls-tree -r` / `log` on large trees. */
 const MAX_BUFFER = 256 * 1024 * 1024;
 
+/**
+ * Every git call runs without optional locks. Otherwise `git status` (the
+ * snapshot's dirty gate) takes the worktree's index.lock after its refresh,
+ * holds it through the untracked scan, and writes refreshed stat info back into
+ * the real index. That breaks the never-mutate invariant and makes the user's own
+ * `git add`/`commit`/`checkout` fail with "index.lock: File exists" while it runs.
+ * Required locks (update-ref, writes to our private GIT_INDEX_FILE) still apply.
+ */
+const NO_OPTIONAL_LOCKS = { GIT_OPTIONAL_LOCKS: "0" };
+
 /** Run git, return trimmed stdout. Throws (with stderr attached) on non-zero. */
 export function git(args: string[], opts: GitOptions = {}): string {
   const out = execFileSync("git", args, {
     cwd: opts.cwd,
-    env: opts.env ? { ...process.env, ...opts.env } : process.env,
+    env: { ...process.env, ...NO_OPTIONAL_LOCKS, ...opts.env },
     input: opts.input,
     encoding: "utf8",
     maxBuffer: MAX_BUFFER,
