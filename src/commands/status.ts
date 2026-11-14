@@ -18,9 +18,7 @@ export function statusCommand(flags: Record<string, string | boolean>): number {
   const undo = gitTry(["rev-parse", "-q", "--verify", "refs/rewind/undo"], {
     cwd: repo.root,
   });
-  const countRaw = head
-    ? gitTry(["rev-list", "--count", cfg.ref], { cwd: repo.root })
-    : "0";
+  const countRaw = head ? gitTry(["rev-list", "--count", cfg.ref], { cwd: repo.root }) : "0";
   const count = Number.parseInt(countRaw ?? "0", 10);
 
   if (bool(flags, "json", false)) {

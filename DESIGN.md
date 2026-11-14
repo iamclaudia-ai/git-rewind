@@ -16,15 +16,16 @@ committed.
 
 The model is lifted from the Pi agent's `pi-rewind-hook` (snapshots as commits
 reachable through a single hidden ref, dedup on tree SHA, ignored files
-excluded). That extension is **Pi-only**. `git-rewind` reimplements the *storage
-model* as a standalone CLI so **any** agent — Claude Code (`Stop` hook), Codex,
+excluded). That extension is **Pi-only**. `git-rewind` reimplements the _storage
+model_ as a standalone CLI so **any** agent — Claude Code (`Stop` hook), Codex,
 Gemini CLI, Cursor, a plain shell — can drive it. The agent integration is just
 "run this command at turn end."
 
 ### Non-goals
+
 - Not a replacement for git history, Time Machine, or the APFS snapshot job — a
   complementary layer.
-- Not a per-*tool*/per-*save* recorder (that's noise). Per **turn** boundary only.
+- Not a per-_tool_/per-_save_ recorder (that's noise). Per **turn** boundary only.
 - No fancy restore TUI in v1 — restore is a CLI command; agent-native `/tree`-style
   UI is out of scope (that was Pi-specific).
 
@@ -52,6 +53,7 @@ which is why capture uses a throwaway `GIT_INDEX_FILE` and only ever touches
   ignores them but `git gc` won't reclaim them until pruned.
 - **Metadata rides in the commit message** (git-native, portable across agents —
   there is no shared cross-agent session ledger, so the commit is authoritative):
+
   ```
   rewind: turn snapshot
 
@@ -62,11 +64,13 @@ which is why capture uses a throwaway `GIT_INDEX_FILE` and only ever touches
   Rewind-Time: 2026-07-15T11:12:39-04:00
   Rewind-Label: <optional>      # user/agent label for pinning
   ```
+
   `list --json` parses these trailers. Author/committer are set to a fixed
   `git-rewind <noreply@…>` identity so the user's `user.name`/`user.email` and
   signing config are never invoked.
 
 ### Why a single linear chain (not one-ref-per-snapshot, not reflog-only)
+
 - **vs. one ref per snapshot** (`refs/rewind/snaps/<ts>`): trivial to prune (delete
   refs) but explodes the ref namespace (thousands of refs slow git). Rejected.
 - **vs. reflog-only** (move `refs/rewind/store`, rely on its reflog for history):
@@ -120,6 +124,7 @@ Notes:
   porcelain that could touch the real index/HEAD.
 
 ### Performance & the `--async` / dirty-gate story
+
 Turn-end hooks should return fast (target < ~300 ms). On a big repo (beehiiv:
 thousands of files) `git add -A` scans the worktree.
 - **`--async`:** the CLI double-forks a detached child (own process group, stdio
@@ -136,14 +141,14 @@ thousands of files) `git add -A` scans the worktree.
 ## 5. Restore (`git-rewind restore <selector> [-- <paths…>]`)
 
 Exact restore for the domain we own (tracked + untracked-non-ignored). Mirrors
-`pi-rewind`'s delete-then-restore so the worktree matches the snapshot *exactly*,
+`pi-rewind`'s delete-then-restore so the worktree matches the snapshot _exactly_,
 without staging.
 
 1. **Snapshot the current state first** as the undo point → write it and move
    `refs/rewind/undo` to it. (`git-rewind undo` restores this.)
 2. Resolve `<selector>` → a snapshot commit (see §6 addressing).
 3. **Full restore (no paths):**
-   - Delete worktree paths present in the *current* snapshot but absent in the
+   - Delete worktree paths present in the _current_ snapshot but absent in the
      target (so removed-since files come back and added-since files go away).
    - Materialize the target tree into the worktree via a temp index:
      `GIT_INDEX_FILE=tmp git read-tree <target>` then `git checkout-index -a -f`.
@@ -153,7 +158,7 @@ without staging.
    untouched. This is the "undo just this file" path.
 
 Restore explicitly does **not** cover: ignored files, empty directories, and it
-does not attempt to restore the *staged index* (by design — staging is user state).
+does not attempt to restore the _staged index_ (by design — staging is user state).
 
 ## 6. Snapshot addressing / selectors
 
@@ -208,18 +213,18 @@ gitwatch "one folder at a time" problem).
 
 ## 9. Command surface
 
-| Command | Purpose |
-|---|---|
-| `git-rewind snapshot [--async] [--if-dirty] [--agent <a>] [--session <id>] [--label <l>] [--repo <path>] [--boundary turn-end\|pre-prompt\|manual]` | Capture the worktree (the hook's call) |
-| `git-rewind list [--repo <path>] [--limit N] [--json]` | Recent snapshots: index, time, agent, session, label, #changed vs prev |
-| `git-rewind show <selector>` | Metadata + changed-file summary for one snapshot |
-| `git-rewind diff <selector> [-- <paths>]` | Diff worktree (or `--from <sel>`) against a snapshot |
-| `git-rewind restore <selector> [-- <paths>]` | Restore worktree/paths (writes an undo point first) |
-| `git-rewind undo` | Restore the pre-last-restore state (`refs/rewind/undo`) |
-| `git-rewind prune [--keep-last N] [--max-age-days D] [--gc]` | Trim retention |
-| `git-rewind status [--repo <path>]` | Store head, count, config in effect |
-| `git-rewind install <claude\|codex\|gemini> [--boundary …]` | Write/patch that agent's hook config |
-| `git-rewind uninstall <agent>` | Remove the hook config + optionally `refs/rewind/*` |
+| Command                                                                                                                                             | Purpose                                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `git-rewind snapshot [--async] [--if-dirty] [--agent <a>] [--session <id>] [--label <l>] [--repo <path>] [--boundary turn-end\|pre-prompt\|manual]` | Capture the worktree (the hook's call)                                 |
+| `git-rewind list [--repo <path>] [--limit N] [--json]`                                                                                              | Recent snapshots: index, time, agent, session, label, #changed vs prev |
+| `git-rewind show <selector>`                                                                                                                        | Metadata + changed-file summary for one snapshot                       |
+| `git-rewind diff <selector> [-- <paths>]`                                                                                                           | Diff worktree (or `--from <sel>`) against a snapshot                   |
+| `git-rewind restore <selector> [-- <paths>]`                                                                                                        | Restore worktree/paths (writes an undo point first)                    |
+| `git-rewind undo`                                                                                                                                   | Restore the pre-last-restore state (`refs/rewind/undo`)                |
+| `git-rewind prune [--keep-last N] [--max-age-days D] [--gc]`                                                                                        | Trim retention                                                         |
+| `git-rewind status [--repo <path>]`                                                                                                                 | Store head, count, config in effect                                    |
+| `git-rewind install <claude\|codex\|gemini> [--boundary …]`                                                                                         | Write/patch that agent's hook config                                   |
+| `git-rewind uninstall <agent>`                                                                                                                      | Remove the hook config + optionally `refs/rewind/*`                    |
 
 Global flags: `--json` (machine output for agents), `--quiet`, `--verbose`,
 `--repo <path>` (override cwd resolution). Exit codes: `0` ok / no-op, non-zero
@@ -230,13 +235,15 @@ only on real error — a hook must never fail the turn.
 Because it's a CLI, integration is "run at turn end." Two we care about:
 
 ### Claude Code — `Stop` hook (`~/.claude/settings.json`)
+
 ```json
 {
   "hooks": {
     "Stop": [
-      { "matcher": "", "hooks": [
-        { "type": "command", "command": "git-rewind snapshot --async --agent claude" }
-      ]}
+      {
+        "matcher": "",
+        "hooks": [{ "type": "command", "command": "git-rewind snapshot --async --agent claude" }]
+      }
     ]
   }
 }
@@ -247,6 +254,7 @@ Optionally add a `UserPromptSubmit` hook with `--boundary pre-prompt` for a
 pre-turn baseline.
 
 ### Codex CLI
+
 Wire the equivalent turn-end/notify hook to `git-rewind snapshot --async --agent
 codex`. (Confirm Codex's current hook/notify surface during the build — it has
 evolved; the CLI itself needs nothing Codex-specific.)
@@ -257,7 +265,7 @@ idempotently.
 ## 11. Recommended defaults (confirm at build kickoff)
 
 These encode my earlier recommendation; they're the starting posture, easy to flip:
-1. **Boundary:** `Stop` / turn-end only to start (capture *after* edits — the risky
+1. **Boundary:** `Stop` / turn-end only to start (capture _after_ edits — the risky
    moment). Add `pre-prompt` later if wanted.
 2. **Mode:** `--async` + `--if-dirty` on, so hooks are ~free on quiet/big-repo turns.
 3. **Scope:** opt-in `repos.allow` (start with beehiiv + iamclaudia-ai), not all-repos.
@@ -265,6 +273,7 @@ These encode my earlier recommendation; they're the starting posture, easy to fl
    for v1; a `/rewind` helper skill can come later.
 
 ## 12. Open questions for the build session
+
 - Session-id extraction: parse the agent's hook stdin JSON generically, or per-agent
   adapters? (Lean generic with best-effort keys.)
 - Async detachment on macOS: double-fork vs `Bun.spawn({ … , detached })` — verify the

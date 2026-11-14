@@ -3,17 +3,17 @@
  * (DESIGN.md §5). Restore may change the worktree (that's the job) but must never
  * touch the real index, HEAD, current branch, or ignored files.
  */
+
+import { afterEach, beforeEach, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, expect, test } from "bun:test";
 
 import { writeWorktreeTree } from "../src/capture.ts";
 import { restoreCommand, runRestore, undoCommand } from "../src/commands/restore.ts";
 import { runSnapshot, type SnapshotOptions } from "../src/commands/snapshot.ts";
 
-const REF = "refs/rewind/store";
 let repo: string;
 const cleanups: string[] = [];
 

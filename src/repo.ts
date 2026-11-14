@@ -63,11 +63,7 @@ function globMatch(pattern: string, value: string): boolean {
  * list means "all repos" (capture-everywhere default — errs toward protecting
  * data); a non-empty allow list is an opt-in allowlist.
  */
-export function isRepoAllowed(
-  repoRoot: string,
-  allow: string[],
-  deny: string[],
-): boolean {
+export function isRepoAllowed(repoRoot: string, allow: string[], deny: string[]): boolean {
   if (deny.some((p) => globMatch(p, repoRoot))) return false;
   if (allow.length === 0) return true;
   return allow.some((p) => globMatch(p, repoRoot));

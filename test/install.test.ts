@@ -3,10 +3,11 @@
  * settings.json. The tests always target a throwaway settings path, never the
  * real ~/.claude/settings.json.
  */
+
+import { afterEach, beforeEach, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, expect, test } from "bun:test";
 
 import { installCommand, uninstallCommand } from "../src/commands/install.ts";
 
@@ -14,11 +15,23 @@ let dir: string;
 let settings: string;
 const cleanups: string[] = [];
 
-function read(): any {
-  return JSON.parse(readFileSync(settings, "utf8"));
+/** The slice of a Claude Code settings file these tests read. */
+interface SettingsFile {
+  hooks?: Record<string, { hooks?: { command?: string }[] }[]>;
+  [key: string]: unknown;
+}
+
+function read(): SettingsFile {
+  return JSON.parse(readFileSync(settings, "utf8")) as SettingsFile;
+}
+/** Every hook command registered for `event`. */
+function commands(s: SettingsFile, event: string): string[] {
+  return (s.hooks?.[event] ?? []).flatMap((e) =>
+    (e.hooks ?? []).flatMap((h) => (typeof h.command === "string" ? [h.command] : [])),
+  );
 }
 function stopCommands(s = read()): string[] {
-  return (s.hooks?.Stop ?? []).flatMap((e: any) => (e.hooks ?? []).map((h: any) => h.command));
+  return commands(s, "Stop");
 }
 
 beforeEach(() => {
@@ -35,7 +48,9 @@ test("install adds a Stop hook, creating settings.json if absent", () => {
   const code = installCommand(["claude"], { settings, quiet: true });
   expect(code).toBe(0);
   const cmds = stopCommands();
-  expect(cmds.some((c) => c.includes("git-rewind snapshot") && c.includes("--agent claude"))).toBe(true);
+  expect(cmds.some((c) => c.includes("git-rewind snapshot") && c.includes("--agent claude"))).toBe(
+    true,
+  );
 });
 
 test("install preserves unrelated settings and existing hooks", () => {
@@ -69,9 +84,7 @@ test("--boundary pre-prompt keeps Stop at turn-end and adds a pre-prompt hook", 
   const stop = stopCommands(s);
   expect(stop.length).toBe(1);
   expect(stop[0]).not.toContain("--boundary"); // Stop stays turn-end
-  const pre = (s.hooks.UserPromptSubmit ?? []).flatMap((e: any) =>
-    (e.hooks ?? []).map((h: any) => h.command),
-  );
+  const pre = commands(s, "UserPromptSubmit");
   expect(pre[0]).toContain("--boundary pre-prompt");
 });
 

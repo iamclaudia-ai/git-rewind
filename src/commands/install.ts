@@ -43,7 +43,10 @@ function agentSpec(agent: string): AgentSpec | null {
     case "claude":
       return { kind: "claude", defaultSettings: join(homedir(), ".claude", "settings.json") };
     case "codex":
-      return { kind: "manual", note: "Codex CLI: point your turn-end/notify hook at the command below." };
+      return {
+        kind: "manual",
+        note: "Codex CLI: point your turn-end/notify hook at the command below.",
+      };
     case "gemini":
       return { kind: "manual", note: "Gemini CLI: point your turn-end hook at the command below." };
     default:
@@ -65,9 +68,7 @@ function readSettings(path: string): Settings {
   try {
     return JSON.parse(raw) as Settings;
   } catch (err) {
-    throw new Error(
-      `refusing to edit malformed JSON at ${path}: ${(err as Error).message}`,
-    );
+    throw new Error(`refusing to edit malformed JSON at ${path}: ${(err as Error).message}`);
   }
 }
 
@@ -77,7 +78,9 @@ function writeSettings(path: string, settings: Settings): void {
 }
 
 function entryIsOurs(entry: HookEntry): boolean {
-  return (entry.hooks ?? []).some((h) => typeof h.command === "string" && h.command.includes(MARKER));
+  return (entry.hooks ?? []).some(
+    (h) => typeof h.command === "string" && h.command.includes(MARKER),
+  );
 }
 
 /** Add or update our hook for `event`; returns "added" | "updated" | "unchanged". */
@@ -87,10 +90,13 @@ function upsertHook(
   command: string,
 ): "added" | "updated" | "unchanged" {
   settings.hooks ??= {};
-  const list = (settings.hooks[event] ??= []);
+  const list = settings.hooks[event] ?? [];
+  settings.hooks[event] = list;
   const existing = list.find(entryIsOurs);
   if (existing) {
-    const cmd = existing.hooks?.find((h) => typeof h.command === "string" && h.command.includes(MARKER));
+    const cmd = existing.hooks?.find(
+      (h) => typeof h.command === "string" && h.command.includes(MARKER),
+    );
     if (cmd && cmd.command === command) return "unchanged";
     if (cmd) {
       cmd.command = command;
@@ -103,17 +109,18 @@ function upsertHook(
 
 /** Remove our hook entries for `event`; returns count removed. Prunes empties. */
 function removeHook(settings: Settings, event: string): number {
-  const list = settings.hooks?.[event];
-  if (!list) return 0;
+  const hooks = settings.hooks;
+  const list = hooks?.[event];
+  if (!hooks || !list) return 0;
   const before = list.length;
   const kept = list.filter((e) => !entryIsOurs(e));
   const removed = before - kept.length;
   if (kept.length > 0) {
-    settings.hooks![event] = kept;
+    hooks[event] = kept;
   } else {
-    delete settings.hooks![event];
+    delete hooks[event];
   }
-  if (settings.hooks && Object.keys(settings.hooks).length === 0) delete settings.hooks;
+  if (Object.keys(hooks).length === 0) delete settings.hooks;
   return removed;
 }
 
@@ -190,7 +197,7 @@ export function uninstallCommand(
     if (!quiet) process.stdout.write(s);
   };
   const spec = agentSpec(agent);
-  if (!spec || spec.kind !== "claude") {
+  if (spec?.kind !== "claude") {
     out(
       `git-rewind: nothing automated to remove for '${agent}' — remove the snapshot command from its hook config manually.\n`,
     );

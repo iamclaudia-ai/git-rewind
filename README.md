@@ -3,12 +3,12 @@
 **Agent-agnostic, git-native per-turn worktree snapshots.**
 
 `git-rewind` captures your repository's working-tree state into a hidden git ref
-(`refs/rewind/store`) at every agent turn — tracked *and* untracked files,
+(`refs/rewind/store`) at every agent turn — tracked _and_ untracked files,
 ignored files excluded — without ever touching your index, `HEAD`, branches, or
 stash. When an AI agent (or a stray `rm`) clobbers your work, you restore any
 turn, whole or per-file.
 
-It's a single **bun CLI**, so *any* coding agent that can run a shell command at
+It's a single **bun CLI**, so _any_ coding agent that can run a shell command at
 turn end can use it — Claude Code, Codex, Gemini CLI, Cursor, or a plain shell.
 
 > Inspired by the Pi agent's `pi-rewind-hook`, which is Pi-only. This reimplements
@@ -56,9 +56,16 @@ git-rewind undo                  # oops — revert that restore
 
 **Claude Code** (`~/.claude/settings.json`):
 ```json
-{ "hooks": { "Stop": [ { "matcher": "", "hooks": [
-  { "type": "command", "command": "git-rewind snapshot --async --agent claude" }
-] } ] } }
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [{ "type": "command", "command": "git-rewind snapshot --async --agent claude" }]
+      }
+    ]
+  }
+}
 ```
 
 **Codex / others:** point the agent's turn-end hook at

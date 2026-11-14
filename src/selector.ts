@@ -49,8 +49,7 @@ export function resolveSelector(ctx: ResolveContext, selector: string): string |
   if (!commit) return null;
   const tip = verifyCommit(root, ref);
   if (commit === tip) return commit;
-  const onChain =
-    gitTry(["merge-base", "--is-ancestor", commit, ref], { cwd: root }) !== null;
+  const onChain = gitTry(["merge-base", "--is-ancestor", commit, ref], { cwd: root }) !== null;
   return onChain ? commit : null;
 }
 

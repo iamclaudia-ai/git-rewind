@@ -6,7 +6,7 @@
  * real index, HEAD, branches, stash, and worktree are never read for writing nor
  * mutated.
  */
-import { spawn, type SpawnOptions } from "node:child_process";
+import { type SpawnOptions, spawn } from "node:child_process";
 import { openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { bool, str } from "../args.ts";
@@ -126,10 +126,7 @@ export function runSnapshot(opts: SnapshotOptions): SnapshotResult {
       const commit = commitTree(repo.root, tree, { parent, message });
 
       // CAS: oldvalue = parent, or "" to assert the ref must not yet exist.
-      const casOk = gitTry(
-        ["update-ref", ref, commit, parent ?? ""],
-        { cwd: repo.root },
-      );
+      const casOk = gitTry(["update-ref", ref, commit, parent ?? ""], { cwd: repo.root });
       if (casOk !== null) {
         return { ok: true, status: "created", repo: repo.root, ref, commit, parent };
       }
@@ -175,8 +172,7 @@ export function snapshotCommand(
   const repoDir = str(flags, "repo") ?? process.cwd();
   const boundary = (str(flags, "boundary") as Boundary) ?? "turn-end";
   const session =
-    str(flags, "session") ??
-    (bool(flags, "stdin-session", false) ? readStdinSession() : undefined);
+    str(flags, "session") ?? (bool(flags, "stdin-session", false) ? readStdinSession() : undefined);
   const opts: SnapshotOptions = {
     repoDir,
     agent: str(flags, "agent") ?? DEFAULT_AGENT,
@@ -196,7 +192,8 @@ export function snapshotCommand(
     process.stdout.write(`${JSON.stringify(res)}\n`);
   } else if (opts.verbose && !opts.quiet) {
     const where = res.repo ?? repoDir;
-    if (res.status === "created") process.stderr.write(`git-rewind: snapshot ${res.commit?.slice(0, 12)} (${where})\n`);
+    if (res.status === "created")
+      process.stderr.write(`git-rewind: snapshot ${res.commit?.slice(0, 12)} (${where})\n`);
     else process.stderr.write(`git-rewind: ${res.status} (${where})\n`);
   }
 

@@ -24,10 +24,9 @@ export interface SnapshotEntry {
 
 /** Files changed by `commit` vs its chain parent (`--root` counts all for the root). */
 function changedCount(root: string, commit: string): number {
-  const out = gitTry(
-    ["diff-tree", "--root", "--no-commit-id", "--name-only", "-r", commit],
-    { cwd: root },
-  );
+  const out = gitTry(["diff-tree", "--root", "--no-commit-id", "--name-only", "-r", commit], {
+    cwd: root,
+  });
   if (!out) return 0;
   return out.split("\n").filter(Boolean).length;
 }
@@ -88,7 +87,11 @@ export function listCommand(flags: Record<string, string | boolean>): number {
 
   const lines = entries.map((e) => {
     const when = e.time ?? "";
-    const meta = [e.agent, e.session ? `sess:${e.session.slice(0, 8)}` : "", e.label ? `#${e.label}` : ""]
+    const meta = [
+      e.agent,
+      e.session ? `sess:${e.session.slice(0, 8)}` : "",
+      e.label ? `#${e.label}` : "",
+    ]
       .filter(Boolean)
       .join(" ");
     const files = `${e.changed} file${e.changed === 1 ? "" : "s"}`;

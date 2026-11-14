@@ -6,18 +6,19 @@
  * byte-for-byte unchanged. Everything else (dedup, deletion capture, ignored-file
  * exclusion, unborn branch, clean-gate) rides on top of that.
  */
+
+import { afterEach, beforeEach, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, expect, test } from "bun:test";
 
 import { readEntries } from "../src/commands/list.ts";
 import {
   DEFAULT_AGENT,
   runSnapshot,
-  snapshotCommand,
   type SnapshotOptions,
+  snapshotCommand,
 } from "../src/commands/snapshot.ts";
 import { parseTrailers } from "../src/meta.ts";
 import { resolveSelector } from "../src/selector.ts";
@@ -209,11 +210,13 @@ test("list + label selector resolve snapshots newest-first", () => {
   expect(entries[0]?.label).toBe("second"); // newest first
   expect(entries[1]?.label).toBe("first");
 
+  const [newest, oldest] = entries;
+  if (!newest || !oldest) throw new Error("expected two snapshot entries");
   const ctx = { root: repo, ref: REF };
-  expect(resolveSelector(ctx, "label:first")).toBe(entries[1]!.commit);
-  expect(resolveSelector(ctx, "0")).toBe(entries[0]!.commit);
-  expect(resolveSelector(ctx, "1")).toBe(entries[1]!.commit);
-  expect(resolveSelector(ctx, "latest")).toBe(entries[0]!.commit);
+  expect(resolveSelector(ctx, "label:first")).toBe(oldest.commit);
+  expect(resolveSelector(ctx, "0")).toBe(newest.commit);
+  expect(resolveSelector(ctx, "1")).toBe(oldest.commit);
+  expect(resolveSelector(ctx, "latest")).toBe(newest.commit);
 });
 
 test("agent defaults to 'shell' when --agent is omitted", () => {
