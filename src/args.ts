@@ -69,11 +69,7 @@ export function str(flags: Record<string, string | boolean>, key: string): strin
 }
 
 /** Read a flag as a boolean with an explicit default (handles --no-x = false). */
-export function bool(
-  flags: Record<string, string | boolean>,
-  key: string,
-  dflt: boolean,
-): boolean {
+export function bool(flags: Record<string, string | boolean>, key: string, dflt: boolean): boolean {
   const v = flags[key];
   return typeof v === "boolean" ? v : dflt;
 }

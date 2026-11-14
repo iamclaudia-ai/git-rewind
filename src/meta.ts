@@ -20,11 +20,7 @@ export interface Trailers {
 
 /** Build the full commit message (subject + blank line + trailers). */
 export function buildMessage(t: Trailers): string {
-  const lines = [
-    "rewind: turn snapshot",
-    "",
-    `Rewind-Version: ${t.version}`,
-  ];
+  const lines = ["rewind: turn snapshot", "", `Rewind-Version: ${t.version}`];
   if (t.agent) lines.push(`Rewind-Agent: ${t.agent}`);
   if (t.session) lines.push(`Rewind-Session: ${t.session}`);
   if (t.boundary) lines.push(`Rewind-Boundary: ${t.boundary}`);

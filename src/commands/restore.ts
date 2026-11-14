@@ -10,7 +10,7 @@
  *      materialize the target tree via a throwaway index + checkout-index.
  * Path-scoped restore confines both the deletes and the checkout to the path set.
  */
-import { mkdtempSync, rmSync, rmdirSync } from "node:fs";
+import { mkdtempSync, rmdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { bool, str } from "../args.ts";
@@ -19,7 +19,7 @@ import { loadConfig } from "../config.ts";
 import { git, gitTry } from "../git.ts";
 import { withLock } from "../lock.ts";
 import { buildMessage, REWIND_VERSION } from "../meta.ts";
-import { resolveRepo, type Repo } from "../repo.ts";
+import { type Repo, resolveRepo } from "../repo.ts";
 import { resolveSelector } from "../selector.ts";
 
 const UNDO_REF = "refs/rewind/undo";
@@ -191,7 +191,9 @@ export function restoreCommand(
 ): number {
   const selector = positionals[0];
   if (!selector) {
-    process.stderr.write("git-rewind: restore requires a snapshot selector (e.g. 1, latest, label:x)\n");
+    process.stderr.write(
+      "git-rewind: restore requires a snapshot selector (e.g. 1, latest, label:x)\n",
+    );
     return 1;
   }
   const res = runRestore({
@@ -202,7 +204,11 @@ export function restoreCommand(
     quiet: bool(flags, "quiet", false),
     verbose: bool(flags, "verbose", false),
   });
-  return emit(res, { json: bool(flags, "json", false), quiet: bool(flags, "quiet", false) }, "Restored");
+  return emit(
+    res,
+    { json: bool(flags, "json", false), quiet: bool(flags, "quiet", false) },
+    "Restored",
+  );
 }
 
 export function undoCommand(flags: Record<string, string | boolean>): number {
@@ -217,5 +223,9 @@ export function undoCommand(flags: Record<string, string | boolean>): number {
     quiet: bool(flags, "quiet", false),
     verbose: bool(flags, "verbose", false),
   });
-  return emit(res, { json: bool(flags, "json", false), quiet: bool(flags, "quiet", false) }, "Undo");
+  return emit(
+    res,
+    { json: bool(flags, "json", false), quiet: bool(flags, "quiet", false) },
+    "Undo",
+  );
 }

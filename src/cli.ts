@@ -7,12 +7,12 @@
  *   not any branch, not the stash, not the worktree. Only objects + refs/rewind/*.
  */
 import { parseArgs } from "./args.ts";
-import { DEFAULTS } from "./config.ts";
 import { installCommand, uninstallCommand } from "./commands/install.ts";
 import { listCommand, showCommand } from "./commands/list.ts";
 import { restoreCommand, undoCommand } from "./commands/restore.ts";
 import { snapshotCommand } from "./commands/snapshot.ts";
 import { statusCommand } from "./commands/status.ts";
+import { DEFAULTS } from "./config.ts";
 
 const COMMANDS = {
   snapshot: "Capture the current worktree into refs/rewind/store (the hook's call)",
@@ -103,9 +103,7 @@ function main(argv: string[]): void {
   try {
     switch (cmd) {
       case "snapshot":
-        process.exit(
-          snapshotCommand(flags, { async: DEFAULTS.async, ifDirty: DEFAULTS.ifDirty }),
-        );
+        process.exit(snapshotCommand(flags, { async: DEFAULTS.async, ifDirty: DEFAULTS.ifDirty }));
         break;
       case "list":
         process.exit(listCommand(flags));

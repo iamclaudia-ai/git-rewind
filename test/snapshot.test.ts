@@ -6,18 +6,19 @@
  * byte-for-byte unchanged. Everything else (dedup, deletion capture, ignored-file
  * exclusion, unborn branch, clean-gate) rides on top of that.
  */
+
+import { afterEach, beforeEach, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, expect, test } from "bun:test";
 
 import { readEntries } from "../src/commands/list.ts";
 import {
   DEFAULT_AGENT,
   runSnapshot,
-  snapshotCommand,
   type SnapshotOptions,
+  snapshotCommand,
 } from "../src/commands/snapshot.ts";
 import { parseTrailers } from "../src/meta.ts";
 import { resolveSelector } from "../src/selector.ts";

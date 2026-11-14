@@ -3,10 +3,11 @@
  * settings.json. The tests always target a throwaway settings path, never the
  * real ~/.claude/settings.json.
  */
+
+import { afterEach, beforeEach, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, expect, test } from "bun:test";
 
 import { installCommand, uninstallCommand } from "../src/commands/install.ts";
 
@@ -35,7 +36,9 @@ test("install adds a Stop hook, creating settings.json if absent", () => {
   const code = installCommand(["claude"], { settings, quiet: true });
   expect(code).toBe(0);
   const cmds = stopCommands();
-  expect(cmds.some((c) => c.includes("git-rewind snapshot") && c.includes("--agent claude"))).toBe(true);
+  expect(cmds.some((c) => c.includes("git-rewind snapshot") && c.includes("--agent claude"))).toBe(
+    true,
+  );
 });
 
 test("install preserves unrelated settings and existing hooks", () => {

@@ -43,7 +43,10 @@ function agentSpec(agent: string): AgentSpec | null {
     case "claude":
       return { kind: "claude", defaultSettings: join(homedir(), ".claude", "settings.json") };
     case "codex":
-      return { kind: "manual", note: "Codex CLI: point your turn-end/notify hook at the command below." };
+      return {
+        kind: "manual",
+        note: "Codex CLI: point your turn-end/notify hook at the command below.",
+      };
     case "gemini":
       return { kind: "manual", note: "Gemini CLI: point your turn-end hook at the command below." };
     default:
@@ -65,9 +68,7 @@ function readSettings(path: string): Settings {
   try {
     return JSON.parse(raw) as Settings;
   } catch (err) {
-    throw new Error(
-      `refusing to edit malformed JSON at ${path}: ${(err as Error).message}`,
-    );
+    throw new Error(`refusing to edit malformed JSON at ${path}: ${(err as Error).message}`);
   }
 }
 
@@ -77,7 +78,9 @@ function writeSettings(path: string, settings: Settings): void {
 }
 
 function entryIsOurs(entry: HookEntry): boolean {
-  return (entry.hooks ?? []).some((h) => typeof h.command === "string" && h.command.includes(MARKER));
+  return (entry.hooks ?? []).some(
+    (h) => typeof h.command === "string" && h.command.includes(MARKER),
+  );
 }
 
 /** Add or update our hook for `event`; returns "added" | "updated" | "unchanged". */
@@ -90,7 +93,9 @@ function upsertHook(
   const list = (settings.hooks[event] ??= []);
   const existing = list.find(entryIsOurs);
   if (existing) {
-    const cmd = existing.hooks?.find((h) => typeof h.command === "string" && h.command.includes(MARKER));
+    const cmd = existing.hooks?.find(
+      (h) => typeof h.command === "string" && h.command.includes(MARKER),
+    );
     if (cmd && cmd.command === command) return "unchanged";
     if (cmd) {
       cmd.command = command;
