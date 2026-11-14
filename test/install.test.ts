@@ -15,11 +15,23 @@ let dir: string;
 let settings: string;
 const cleanups: string[] = [];
 
-function read(): any {
-  return JSON.parse(readFileSync(settings, "utf8"));
+/** The slice of a Claude Code settings file these tests read. */
+interface SettingsFile {
+  hooks?: Record<string, { hooks?: { command?: string }[] }[]>;
+  [key: string]: unknown;
+}
+
+function read(): SettingsFile {
+  return JSON.parse(readFileSync(settings, "utf8")) as SettingsFile;
+}
+/** Every hook command registered for `event`. */
+function commands(s: SettingsFile, event: string): string[] {
+  return (s.hooks?.[event] ?? []).flatMap((e) =>
+    (e.hooks ?? []).flatMap((h) => (typeof h.command === "string" ? [h.command] : [])),
+  );
 }
 function stopCommands(s = read()): string[] {
-  return (s.hooks?.Stop ?? []).flatMap((e: any) => (e.hooks ?? []).map((h: any) => h.command));
+  return commands(s, "Stop");
 }
 
 beforeEach(() => {
@@ -72,9 +84,7 @@ test("--boundary pre-prompt keeps Stop at turn-end and adds a pre-prompt hook", 
   const stop = stopCommands(s);
   expect(stop.length).toBe(1);
   expect(stop[0]).not.toContain("--boundary"); // Stop stays turn-end
-  const pre = (s.hooks.UserPromptSubmit ?? []).flatMap((e: any) =>
-    (e.hooks ?? []).map((h: any) => h.command),
-  );
+  const pre = commands(s, "UserPromptSubmit");
   expect(pre[0]).toContain("--boundary pre-prompt");
 });
 

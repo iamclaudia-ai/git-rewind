@@ -90,7 +90,8 @@ function upsertHook(
   command: string,
 ): "added" | "updated" | "unchanged" {
   settings.hooks ??= {};
-  const list = (settings.hooks[event] ??= []);
+  const list = settings.hooks[event] ?? [];
+  settings.hooks[event] = list;
   const existing = list.find(entryIsOurs);
   if (existing) {
     const cmd = existing.hooks?.find(
@@ -108,17 +109,18 @@ function upsertHook(
 
 /** Remove our hook entries for `event`; returns count removed. Prunes empties. */
 function removeHook(settings: Settings, event: string): number {
-  const list = settings.hooks?.[event];
-  if (!list) return 0;
+  const hooks = settings.hooks;
+  const list = hooks?.[event];
+  if (!hooks || !list) return 0;
   const before = list.length;
   const kept = list.filter((e) => !entryIsOurs(e));
   const removed = before - kept.length;
   if (kept.length > 0) {
-    settings.hooks![event] = kept;
+    hooks[event] = kept;
   } else {
-    delete settings.hooks![event];
+    delete hooks[event];
   }
-  if (settings.hooks && Object.keys(settings.hooks).length === 0) delete settings.hooks;
+  if (Object.keys(hooks).length === 0) delete settings.hooks;
   return removed;
 }
 
@@ -195,7 +197,7 @@ export function uninstallCommand(
     if (!quiet) process.stdout.write(s);
   };
   const spec = agentSpec(agent);
-  if (!spec || spec.kind !== "claude") {
+  if (spec?.kind !== "claude") {
     out(
       `git-rewind: nothing automated to remove for '${agent}' — remove the snapshot command from its hook config manually.\n`,
     );

@@ -210,11 +210,13 @@ test("list + label selector resolve snapshots newest-first", () => {
   expect(entries[0]?.label).toBe("second"); // newest first
   expect(entries[1]?.label).toBe("first");
 
+  const [newest, oldest] = entries;
+  if (!newest || !oldest) throw new Error("expected two snapshot entries");
   const ctx = { root: repo, ref: REF };
-  expect(resolveSelector(ctx, "label:first")).toBe(entries[1]!.commit);
-  expect(resolveSelector(ctx, "0")).toBe(entries[0]!.commit);
-  expect(resolveSelector(ctx, "1")).toBe(entries[1]!.commit);
-  expect(resolveSelector(ctx, "latest")).toBe(entries[0]!.commit);
+  expect(resolveSelector(ctx, "label:first")).toBe(oldest.commit);
+  expect(resolveSelector(ctx, "0")).toBe(newest.commit);
+  expect(resolveSelector(ctx, "1")).toBe(oldest.commit);
+  expect(resolveSelector(ctx, "latest")).toBe(newest.commit);
 });
 
 test("agent defaults to 'shell' when --agent is omitted", () => {

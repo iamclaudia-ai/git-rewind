@@ -14,7 +14,6 @@ import { writeWorktreeTree } from "../src/capture.ts";
 import { restoreCommand, runRestore, undoCommand } from "../src/commands/restore.ts";
 import { runSnapshot, type SnapshotOptions } from "../src/commands/snapshot.ts";
 
-const REF = "refs/rewind/store";
 let repo: string;
 const cleanups: string[] = [];
 
