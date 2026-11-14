@@ -7,7 +7,7 @@
  * exclusion, unborn branch, clean-gate) rides on top of that.
  */
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "bun:test";
@@ -146,6 +146,28 @@ test("clean-gate: --if-dirty on a clean worktree is a no-op", () => {
   expect(res.status).toBe("clean");
   // No ref created.
   expect(() => g("rev-parse", "--verify", REF)).toThrow();
+});
+
+test("clean-gate never rewrites the real index (git status runs without optional locks)", () => {
+  // With optional locks on, `git status` takes index.lock after its refresh, holds it
+  // through the untracked scan (blocking the user's own git writes) and writes the
+  // refreshed stat info back into the real index. Make a stat-only change so a
+  // locking status would have something to write.
+  const saved = process.env.GIT_OPTIONAL_LOCKS;
+  delete process.env.GIT_OPTIONAL_LOCKS;
+  try {
+    write("a.txt", "x\n");
+    g("add", "-A");
+    g("commit", "-qm", "init");
+    const future = new Date(Date.now() + 60_000);
+    utimesSync(join(repo, "a.txt"), future, future); // same content, new mtime
+    const indexBefore = readFileSync(join(repo, ".git", "index"));
+
+    expect(snap({ ifDirty: true }).status).toBe("clean");
+    expect(readFileSync(join(repo, ".git", "index")).equals(indexBefore)).toBe(true);
+  } finally {
+    if (saved !== undefined) process.env.GIT_OPTIONAL_LOCKS = saved;
+  }
 });
 
 test("fixed identity + trailers are written to the snapshot commit", () => {
