@@ -73,7 +73,23 @@ after any `snapshot`/`restore`, the real index / `HEAD` / current branch / stash
 are byte-for-byte unchanged. Also cover: tree-SHA dedup, deletion capture,
 ignored-file exclusion, path-scoped restore, and prune re-rooting.
 
-## Status
+## Checks
 
-🚧 Design complete; implementation in progress. `src/cli.ts` is scaffolded, real
-handlers land per the TODO map. Publishing to npm as `git-rewind`.
+`bun run check` runs lint (`biome check`), typecheck (src and tests) and
+`bun test`. CI runs the same on every PR and push to `main`
+(`.github/workflows/publish.yml`). `bun run format` applies biome's formatting.
+
+## Release process
+
+Published to npm as `git-rewind` by the `iamclaudia-ai` account.
+
+1. Bump `version` in `package.json`, commit (`chore(release): vX.Y.Z`) on `main`.
+2. Tag and push: `git tag -a vX.Y.Z -m "Release vX.Y.Z — summary" && git push && git push origin vX.Y.Z`.
+3. The tag runs `publish.yml`: checks, verifies the tag matches `package.json`,
+   builds `dist/cli.js`, and publishes with npm trusted publishing (OIDC, no
+   token). Watch it with `gh run watch`, then confirm with `npm view git-rewind version`.
+   npm can take a minute or two to show it; wait rather than re-publishing.
+
+The trusted publisher on npmjs.com names the repo (`iamclaudia-ai/git-rewind`)
+and the workflow file, so renaming `publish.yml` breaks publishing until that
+setting is updated.
