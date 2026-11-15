@@ -13,21 +13,7 @@ import { restoreCommand, undoCommand } from "./commands/restore.ts";
 import { snapshotCommand } from "./commands/snapshot.ts";
 import { statusCommand } from "./commands/status.ts";
 import { DEFAULTS } from "./config.ts";
-
-const COMMANDS = {
-  snapshot: "Capture the current worktree into refs/rewind/store (the hook's call)",
-  list: "List recent turn snapshots (newest first)",
-  show: "Show metadata + changed-file summary for one snapshot",
-  diff: "Diff worktree (or --from <sel>) against a snapshot",
-  restore: "Restore worktree/paths to a snapshot (writes an undo point first)",
-  undo: "Restore the pre-last-restore state (refs/rewind/undo)",
-  prune: "Trim retention (keep-last / max-age, pin labeled)",
-  status: "Show store head, snapshot count, effective config",
-  install: "Write/patch an agent's turn-end hook config (claude|codex|gemini)",
-  uninstall: "Remove an agent's hook config (and optionally refs/rewind/*)",
-} as const;
-
-type Command = keyof typeof COMMANDS;
+import { type Command, commandHelp, isCommand, usage, wantsHelp } from "./help.ts";
 
 /** Commands wired to real handlers; the rest are scaffolded stubs (exit 0). */
 const IMPLEMENTED = new Set<Command>([
@@ -40,29 +26,6 @@ const IMPLEMENTED = new Set<Command>([
   "install",
   "uninstall",
 ]);
-
-function usage(): string {
-  const rows = Object.entries(COMMANDS)
-    .map(([name, desc]) => `  ${name.padEnd(10)} ${desc}`)
-    .join("\n");
-  return [
-    "git-rewind — per-turn git worktree snapshots for AI agents",
-    "",
-    "USAGE",
-    "  git-rewind <command> [options]",
-    "",
-    "COMMANDS",
-    rows,
-    "",
-    "GLOBAL FLAGS",
-    "  --repo <path>   Override repo resolution (default: cwd's toplevel)",
-    "  --json          Machine-readable output (for agents)",
-    "  --quiet         Suppress non-error output",
-    "  --help          Show help",
-    "",
-    "See DESIGN.md for the full reference.",
-  ].join("\n");
-}
 
 function notImplemented(cmd: Command): never {
   // Exit 0 so a hook NEVER fails the agent's turn (DESIGN.md §9).
@@ -79,13 +42,25 @@ function main(argv: string[]): void {
     process.exit(first ? 0 : 1);
   }
 
-  if (!(first in COMMANDS)) {
+  // `git-rewind help [<command>]`
+  if (first === "help") {
+    const topic = args[1];
+    console.log(topic && isCommand(topic) ? commandHelp(topic) : usage());
+    process.exit(0);
+  }
+
+  if (!isCommand(first)) {
     console.error(`git-rewind: unknown command '${first}'\n`);
     console.error(usage());
     process.exit(1);
   }
 
-  const cmd = first as Command;
+  const cmd = first;
+  // Help must never run the command: `undo --help` used to perform an undo (#7).
+  if (wantsHelp(args.slice(1))) {
+    console.log(commandHelp(cmd));
+    process.exit(0);
+  }
   // `snapshot` treats --async/--if-dirty as booleans that default from config
   // (and support --no-*). Other commands take the usual value flags.
   const booleans = [

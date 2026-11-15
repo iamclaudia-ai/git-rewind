@@ -89,10 +89,9 @@ cheap even on large repos.
 ## Commands
 
 `snapshot` · `list` · `show` · `diff` · `restore` · `undo` · `prune` · `status`
-· `install` · `uninstall`. `git-rewind --help` lists them; per-command help is
-coming ([#7](https://github.com/iamclaudia-ai/git-rewind/issues/7)), so don't pass
-`--help` after a command name yet: today it runs the command. Full reference in
-[DESIGN.md](./DESIGN.md).
+· `install` · `uninstall`. `git-rewind --help` lists them, and `git-rewind <cmd>
+--help` (or `git-rewind help <cmd>`) shows a command's flags without running it.
+Full reference in [DESIGN.md](./DESIGN.md).
 
 ## Status
 
