@@ -112,6 +112,7 @@ git -C "$REPO" update-ref refs/rewind/store "$COMMIT" ${PARENT:+"$PARENT"}   # C
 ```
 
 Notes:
+
 - **Deletions are captured correctly.** With a fresh empty index, a tracked file
   that was deleted in the worktree simply isn't added → absent from the tree →
   the snapshot reflects the true current state.
@@ -127,6 +128,7 @@ Notes:
 
 Turn-end hooks should return fast (target < ~300 ms). On a big repo (beehiiv:
 thousands of files) `git add -A` scans the worktree.
+
 - **`--async`:** the CLI double-forks a detached child (own process group, stdio
   to a log) so the parent returns immediately; the agent can't kill it on turn
   completion. This is the recommended hook mode.
@@ -163,6 +165,7 @@ does not attempt to restore the _staged index_ (by design — staging is user st
 ## 6. Snapshot addressing / selectors
 
 `list` numbers snapshots newest-first; selectors accepted by `restore`/`diff`/`show`:
+
 - `HEAD` / `0` / `latest` — most recent snapshot
 - `1`, `2`, … — N snapshots back (walk `refs/rewind/store` parents)
 - `@{turn:-3}` — sugar for 3 turns back
@@ -174,6 +177,7 @@ does not attempt to restore the _staged index_ (by design — staging is user st
 
 The chain is fully reachable → never auto-GC'd, so it grows unbounded (pi-rewind
 flags the same). `prune` trims it:
+
 - `--keep-last N` (default from config, recommend **200**) and/or
   `--max-age-days D` (recommend **30**).
 - Mechanism: walk the chain, find the cutoff commit, **re-root** — rebuild the
@@ -265,6 +269,7 @@ idempotently.
 ## 11. Recommended defaults (confirm at build kickoff)
 
 These encode my earlier recommendation; they're the starting posture, easy to flip:
+
 1. **Boundary:** `Stop` / turn-end only to start (capture _after_ edits — the risky
    moment). Add `pre-prompt` later if wanted.
 2. **Mode:** `--async` + `--if-dirty` on, so hooks are ~free on quiet/big-repo turns.

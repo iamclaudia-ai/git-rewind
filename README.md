@@ -55,6 +55,7 @@ git-rewind undo                  # oops — revert that restore
 ## Wiring into agents
 
 **Claude Code** (`~/.claude/settings.json`):
+
 ```json
 {
   "hooks": {
