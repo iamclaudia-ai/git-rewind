@@ -24,9 +24,9 @@ turn end can use it — Claude Code, Codex, Gemini CLI, Cursor, or a plain shell
 ## Install
 
 ```bash
-bun install -g git-rewind        # (once published)
+npm install -g git-rewind        # or: bun add -g git-rewind
 # or from source:
-git clone … && cd git-rewind && bun link
+git clone https://github.com/iamclaudia-ai/git-rewind && cd git-rewind && bun install && bun link
 ```
 
 ## Quick start
@@ -36,7 +36,7 @@ git-rewind install claude        # wire the Claude Code Stop hook
 # …work with your agent as usual; every turn is snapshotted…
 
 git-rewind list                  # see recent turn snapshots
-git-rewind diff 1                # what changed since 1 turn ago
+git-rewind show 1                # what changed in the snapshot 1 turn ago
 git-rewind restore 3 -- src/foo.ts   # undo just this file to 3 turns back
 git-rewind undo                  # oops — revert that restore
 ```
@@ -47,7 +47,7 @@ git-rewind undo                  # oops — revert that restore
   builds a tree of the exact worktree (`git add -A` honors `.gitignore`), and if
   that tree differs from the last snapshot, commits it onto `refs/rewind/store`
   with the previous snapshot as parent.
-- The result is a clean, dedup'd, turn-by-turn history you can `log`, `diff`, and
+- The result is a clean, dedup'd, turn-by-turn history you can `list`, `show`, and
   `restore` — living entirely inside your repo, invisible to normal git.
 - Restore writes an **undo point** first, then materializes the target tree into
   the worktree (delete-then-restore for an exact match), still never staging.
@@ -62,16 +62,26 @@ git-rewind undo                  # oops — revert that restore
     "Stop": [
       {
         "matcher": "",
-        "hooks": [{ "type": "command", "command": "git-rewind snapshot --async --agent claude" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git-rewind snapshot --async --agent claude --stdin-session"
+          }
+        ]
       }
     ]
   }
 }
 ```
 
-**Codex / others:** point the agent's turn-end hook at
-`git-rewind snapshot --async --agent <name>`. `git-rewind install <agent>` writes
-the config for you.
+`git-rewind install claude` writes exactly this for you, alongside any hooks you
+already have. `--stdin-session` reads the session id from the JSON Claude Code
+pipes to the hook, so each snapshot records which session made it.
+
+**Codex / Gemini / others:** point the agent's turn-end hook at
+`git-rewind snapshot --async --agent <name>`. `git-rewind install codex` (or
+`gemini`) prints the exact command to point it at; it doesn't edit those agents'
+config files yet.
 
 Snapshots are `--async` (return instantly) and skip clean turns, so hooks stay
 cheap even on large repos.
@@ -79,7 +89,9 @@ cheap even on large repos.
 ## Commands
 
 `snapshot` · `list` · `show` · `diff` · `restore` · `undo` · `prune` · `status`
-· `install` · `uninstall`. Run `git-rewind <cmd> --help`. Full reference in
+· `install` · `uninstall`. `git-rewind --help` lists them; per-command help is
+coming ([#7](https://github.com/iamclaudia-ai/git-rewind/issues/7)), so don't pass
+`--help` after a command name yet: today it runs the command. Full reference in
 [DESIGN.md](./DESIGN.md).
 
 ## Status
@@ -88,7 +100,7 @@ cheap even on large repos.
 dedup, fixed identity, CAS ref update, session-from-stdin), `list`, `show`,
 `status`, `restore` (full + path-scoped, undo-point-first, delete-then-restore),
 `undo` (toggles redo), and `install`/`uninstall` (idempotent Claude `Stop`-hook
-wiring) are implemented and covered by a 27-case suite proving the invariants —
+wiring) are implemented and covered by a test suite proving the invariants —
 the real index/HEAD/branch and ignored files are provably untouched, and full
 restore reproduces the target worktree tree exactly. `diff` and `prune` are the
 remaining pieces. The spec in [DESIGN.md](./DESIGN.md) remains the source of truth.
