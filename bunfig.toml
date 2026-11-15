@@ -1,0 +1,6 @@
+[install]
+# Supply-chain cooling-off window: never install a release younger than 3 days,
+# so a hijacked publish is normally caught and yanked before we can pick it up.
+# Exempt a security fix by exact version only ("name@1.2.3"), with its GHSA.
+minimumReleaseAge = 259200 # seconds
+minimumReleaseAgeExcludes = []
